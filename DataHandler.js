@@ -1,45 +1,34 @@
 const DB = require("sqlite3");
-const db = new DB.Database("./data/data.db");
+var db;
 class DataHandler {
+  constructor(file) {
+    db = new DB.Database(file);
+  }
   auth(username, hash, callback) {
     db.each("SELECT * from users", (err, data) => {
-      if (username == data.username) {
-        if (hash === data.hash) {
-          callback(true, data);
-        } else {
-          callback(false, {
-            error: 401
-          });
-        }
-      } else if (err) {
-        callback(err);
-      } else {
-        callback(false, {
-          error: 404
-        });
+      if (username == data.username && hash === data.hash) {
+        callback(data);
+        return;
       }
-    });
-  }
-  login(username, hash, callback) {
-    this.auth(username, hash, (status, data) => {
-      callback(data);
     });
   }
   getChat(src, dest, callback) {
-    db.all(`SELECT * FROM '${src}-${dest}';`, (err, data) => {
-      if (err) {
-        callback(err);
+    db.all(
+      `SELECT * FROM messages where users='${src}-${dest}' OR users='${dest}-${src}'`,
+      (err, data) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+        callback(data);
         return;
       }
-      callback(data);
-    });
+    );
   }
   getUsers(callback) {
     db.all("SELECT * FROM users", (err, data) => {
       data.forEach(user => {
-        if (user.hash != undefined || user.hash != "") {
-          delete user.hash;
-        }
+        delete user.hash;
       });
       if (err) {
         callback(err);
@@ -47,6 +36,12 @@ class DataHandler {
       }
       callback(data);
     });
+  }
+  addMessage(message) {
+    db.run(
+      `INSERT INTO messages (users,msg_id,sender_id,content) VALUES (?,?,?,?)`,
+      [message.users, message.msg_id, message.sender_id, message.content]
+    );
   }
 }
 
