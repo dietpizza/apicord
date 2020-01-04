@@ -1,11 +1,8 @@
 const DB = require("sqlite3");
 const db = new DB.Database("./data/data.db");
 class DataHandler {
-  authDrize(username, hash, callback) {
+  auth(username, hash, callback) {
     db.each("SELECT * from users", (err, data) => {
-      if (err) {
-        callback(err);
-      }
       if (username == data.username) {
         if (hash === data.hash) {
           callback(true, data);
@@ -14,6 +11,8 @@ class DataHandler {
             error: 401
           });
         }
+      } else if (err) {
+        callback(err);
       } else {
         callback(false, {
           error: 404
@@ -22,8 +21,8 @@ class DataHandler {
     });
   }
   login(username, hash, callback) {
-    this.authorize(username, hash, (status, data) => {
-      return data;
+    this.auth(username, hash, (status, data) => {
+      callback(data);
     });
   }
   getChat(src, dest, callback) {
@@ -35,9 +34,13 @@ class DataHandler {
       callback(data);
     });
   }
-  getUDers(callback) {
+  getUsers(callback) {
     db.all("SELECT * FROM users", (err, data) => {
-      delete data.hash;
+      data.forEach(user => {
+        if (user.hash != undefined || user.hash != "") {
+          delete user.hash;
+        }
+      });
       if (err) {
         callback(err);
         return;

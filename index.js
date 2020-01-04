@@ -9,23 +9,22 @@ app.use(cors());
 var PORT = process.env.PORT || 3000;
 
 app.get("/api/users/:username/:hash", (req, res) => {
-  db.authorize(username, hash, (status, data) => {
+  var username = req.params.username;
+  var hash = req.params.hash;
+  db.auth(username, hash, (status, data) => {
     if (status) {
       db.getUsers(data => {
-        data.forEach(element => {
-          if (element.hash != undefined || element.hash != "") {
-            delete element.hash;
-          }
-        });
         res.json(data);
       });
+    } else {
+      res.json(data);
     }
   });
 });
 app.get("/api/login/:username/:hash", (req, res) => {
-  var username = req.params.username,
-    hash = req.params.hash;
-  db.login(username, hash, (status, dat) => {
+  var username = req.params.username;
+  var hash = req.params.hash;
+  db.login(username, hash, data => {
     res.json(data);
   });
 });
@@ -34,7 +33,7 @@ app.get("/api/chats/:username/:hash/:src/:dest", (req, res) => {
     hash = req.params.hash,
     src = req.params.src,
     dest = req.params.dest;
-  db.authorize(username, hash, (status, dat) => {
+  db.auth(username, hash, (status, dat) => {
     if (status) {
       db.getChat(src, dest, data => {
         res.json(data);
