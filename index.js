@@ -5,6 +5,8 @@ const db = new DB("./data/data.db");
 const app = express();
 
 var allUsers = [];
+var chatBuffer = [];
+
 db.getUsers(users => {
   console.log("User list loaded");
   allUsers = users;
@@ -57,8 +59,7 @@ app.post("/api/chats/add", (req, res) => {
     content: req.body.content
   };
   auth(req.body.username, req.body.hash, data => {
-    console.log(message);
-    db.addMessage(message);
+    chatBuffer.push(message);
     res.end();
   });
 });
@@ -66,3 +67,14 @@ app.post("/api/chats/add", (req, res) => {
 app.listen(PORT, () => {
   console.log("Listening on http://localhost:%s", PORT);
 });
+
+setInterval(() => {
+  if (chatBuffer.length > 0) {
+    console.log("Writing messages to db");
+    chatBuffer.forEach(message => {
+      db.addMessage(message);
+    });
+  }
+  chatBuffer = [];
+  console.log(chatBuffer);
+}, 500);
