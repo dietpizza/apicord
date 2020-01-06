@@ -4,14 +4,6 @@ class DataHandler {
   constructor(file) {
     db = new DB.Database(file);
   }
-  auth(username, hash, callback) {
-    db.each("SELECT * from users", (err, data) => {
-      if (username == data.username && hash === data.hash) {
-        callback(data);
-        return;
-      }
-    });
-  }
   getChat(src, dest, callback) {
     db.all(
       `SELECT * FROM messages where users='${src}-${dest}' OR users='${dest}-${src}'`,
@@ -27,9 +19,6 @@ class DataHandler {
   }
   getUsers(callback) {
     db.all("SELECT * FROM users", (err, data) => {
-      data.forEach(user => {
-        delete user.hash;
-      });
       if (err) {
         callback(err);
         return;
