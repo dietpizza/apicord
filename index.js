@@ -20,7 +20,7 @@ function auth(username, hash, callback) {
   });
 }
 
-// Adding CORS to express
+// Adding CORS middleware to express
 app.use(cors());
 
 // Setting port and middleware (express.json())
@@ -70,11 +70,10 @@ app.listen(PORT, () => {
 
 setInterval(() => {
   if (chatBuffer.length > 0) {
-    console.log("Writing messages to db");
+    console.log("Commiting chat buffer to DB");
     chatBuffer.forEach(message => {
       db.addMessage(message);
     });
   }
   chatBuffer = [];
-  console.log(chatBuffer);
 }, 500);
