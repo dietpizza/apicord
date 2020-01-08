@@ -32,6 +32,9 @@ app.post("/api/users", (req, res) => {
   auth(req.body.username, req.body.hash, data => {
     db.getUsers(users => {
       console.log("Sending User List");
+      users.forEach(user => {
+        delete user.hash;
+      });
       res.json(users);
       return;
     });
