@@ -57,7 +57,9 @@ app.post("/api/login", (req, res) => {
       token: undefined
     };
     if (data.status == 200) {
-      response.token = jwt.sign({ user: data.user }, KEY);
+      response.token = jwt.sign({ user: data.user }, KEY, {
+        expiresIn: 604800
+      });
       res.status(data.status).json(response);
       return;
     }
@@ -90,7 +92,7 @@ app.post("/api/register", (req, res) => {
         sex: req.body.sex
       };
       db.addUser(user);
-      res.status(response.status).json({ message: "User Registered!" });
+      res.status(200).json({ message: "User Registered!" });
     }
   });
 });
@@ -110,6 +112,14 @@ app.post("/api/chats", authorize, (req, res) => {
   db.getChat(user.id, req.body.target, data => {
     res.json(data);
   });
+});
+
+// Catch all 404 requests
+app.post("*", (req, res) => {
+  res.status(404).json({ error: "Page not found!" });
+});
+app.get("*", (req, res) => {
+  res.status(404).json({ error: "Page not found!" });
 });
 
 // Setting up the server
