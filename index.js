@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
-const jwtDecode = require("jwt-decode");
 const DB = require("./DataHandler");
 const db = new DB("./data/data.db");
 const app = express();
@@ -19,11 +18,14 @@ function authorize(req, res, next) {
     jwt.verify(req.body.token, KEY, (err, decoded) => {
       if (err) {
         res.status(401).json({ error: "Not authorized!" });
+        return;
       }
+      res.locals.user = decoded.user;
       return next();
     });
   } else {
-    res.status(500).json({ status: 500 });
+    res.status(401).json({ error: "Not authorized!" });
+    return;
   }
 }
 
@@ -87,7 +89,7 @@ app.post("/api/register", (req, res) => {
 });
 app.post("/api/users", authorize, (req, res) => {
   db.getUsers(users => {
-    user = jwtDecode(req.body.token).user;
+    user = res.locals.user;
     users.forEach(user => {
       delete user.hash;
     });
@@ -97,7 +99,7 @@ app.post("/api/users", authorize, (req, res) => {
   });
 });
 app.post("/api/chats", authorize, (req, res) => {
-  user = jwtDecode(req.body.token).user;
+  user = res.locals.user;
   db.getChat(user.id, req.body.target, data => {
     res.json(data);
   });
