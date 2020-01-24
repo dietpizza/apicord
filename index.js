@@ -1,82 +1,119 @@
 const express = require("express");
 const cors = require("cors");
+const Hash = require("sha256");
+const jwt = require("jsonwebtoken");
+const jwtDecode = require("jwt-decode");
 const DB = require("./DataHandler");
 const db = new DB("./data/data.db");
 const app = express();
 
-var allUsers = [];
 var chatBuffer = [];
+var connectedSockets = [];
 
-db.getUsers(users => {
-  console.log("User list loaded");
-  allUsers = users;
-});
-
-function auth(username, hash, callback) {
-  allUsers.forEach(element => {
-    if (username == element.username && hash == element.hash) {
-      callback(element);
-    }
-  });
-}
-
-// Adding CORS middleware to express
+// Middlewares
 app.use(cors());
-
-// Setting port and middleware (express.json())
-var PORT = process.env.PORT || 3000;
 app.use(express.json());
 
-// Adding the routes
-app.post("/api/users", (req, res) => {
-  auth(req.body.username, req.body.hash, data => {
-    db.getUsers(users => {
-      console.log("Sending User List");
-      users.forEach(user => {
-        delete user.hash;
-      });
-      res.json(users);
-      return;
+// Global Variables
+const PORT = process.env.PORT || 3000;
+const KEY = "imrohan550@gmail.com";
+
+function authorize(req, res, next) {
+  if (req.body.token != undefined) {
+    jwt.verify(req.body.token, KEY, (err, decoded) => {
+      if (err) {
+        res.status(500).json({ status: 500 });
+      }
+      return next();
     });
+  } else {
+    res.status(500).json({ status: 500 });
+  }
+}
+
+// Setting up the server
+const server = app.listen(PORT, () => {
+  console.log("Server running at " + PORT);
+});
+
+// Socket.io
+const io = require("socket.io")(server);
+io.on("connection", socket => {
+  socket.on("disconnect", () => {
+    connectedSockets = connectedSockets.filter(user => user.socket != socket);
+  });
+  socket.on("login", id => {
+    connectedSockets = [...connectedSockets, { id: id, socket: socket }];
+  });
+  socket.on("message-send", data => {
+    var tmp = connectedSockets.find(user => user.id == data.dest_id);
+    chatBuffer.push(data);
+    if (tmp != undefined) {
+      tmp.socket.emit("message-recv", data);
+    }
   });
 });
+
+// The Routes
 app.post("/api/login", (req, res) => {
-  auth(req.body.username, req.body.hash, userData => {
-    console.log("Sending User Data");
-    res.json(userData);
+  db.authenticate(req.body.username, Hash(req.body.passwd), data => {
+    var response = {
+      token: jwt.sign({ user: data.user }, KEY)
+    };
+    res.status(data.status).json(response);
+  });
+});
+app.post("/api/register", (req, res) => {
+  db.getUsers(allUsers => {
+    var response = {
+      status: 200
+    };
+    allUsers.forEach(element => {
+      if (
+        element.username == req.body.username ||
+        element.email == req.body.email
+      ) {
+        response.status = 400;
+        res
+          .status(response.status)
+          .json({ error: "Username or email already registered" });
+      }
+    });
+    if (response.status == 200) {
+      var user = {
+        fname: req.body.fname,
+        lname: req.body.lname,
+        username: req.body.username,
+        email: req.body.email,
+        hash: Hash(req.body.passwd),
+        sex: req.body.sex
+      };
+      db.addUser(user);
+      res.status(response.status).json({ message: "User Registered!" });
+    }
+  });
+});
+app.post("/api/users", authorize, (req, res) => {
+  db.getUsers(users => {
+    user = jwtDecode(req.body.token).user;
+    users.forEach(user => {
+      delete user.hash;
+    });
+    users = users.filter(item => item.username != user.username);
+    res.json(users);
     return;
   });
 });
 app.post("/api/chats", (req, res) => {
-  auth(req.body.username, req.body.hash, data => {
-    db.getChat(req.body.src, req.body.dest, data => {
-      res.json(data);
-    });
+  db.getChat(req.body.src, req.body.dest, data => {
+    res.json(data);
   });
 });
-app.post("/api/chats/add", (req, res) => {
-  message = {
-    users: req.body.users,
-    msg_id: req.body.msg_id,
-    sender_id: req.body.sender_id,
-    content: req.body.content
-  };
-  auth(req.body.username, req.body.hash, data => {
-    chatBuffer.push(message);
-    res.end();
-  });
-});
-
-app.listen(PORT, () => {
-  console.log("Listening on http://localhost:%s", PORT);
-});
-
 setInterval(() => {
   if (chatBuffer.length > 0) {
-    console.log("Commiting chat buffer to DB");
     chatBuffer.forEach(message => {
       db.addMessage(message);
     });
   }
   chatBuffer = [];
-}, 500);
+}, 1000);
