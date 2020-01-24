@@ -1,18 +1,25 @@
+// Dependencies
 const express = require("express");
 const cors = require("cors");
 const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
+
+// Relative dependencies
 const DB = require("./DataHandler");
 const db = new DB("./data/data.db");
+
+// Express instance
 const app = express();
 
 // Scratch Variables
 var chatBuffer = [];
 var connectedSockets = [];
 
-// Middlewares
+// Adding middlewares to express instance
 app.use(cors());
 app.use(express.json());
+
+// Custom Middlewares
 function authorize(req, res, next) {
   if (req.body.token != undefined) {
     jwt.verify(req.body.token, KEY, (err, decoded) => {
