@@ -7,17 +7,13 @@ const DB = require("./DataHandler");
 const db = new DB("./data/data.db");
 const app = express();
 
+// Scratch Variables
 var chatBuffer = [];
 var connectedSockets = [];
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
-
-// Global Variables
-const PORT = process.env.PORT || 3000;
-const KEY = "imrohan550@gmail.com";
-
 function authorize(req, res, next) {
   if (req.body.token != undefined) {
     jwt.verify(req.body.token, KEY, (err, decoded) => {
@@ -31,28 +27,19 @@ function authorize(req, res, next) {
   }
 }
 
-// Setting up the server
-const server = app.listen(PORT, () => {
-  console.log("Server running at " + PORT);
-});
+// Global Variables
+const PORT = process.env.PORT || 3000;
+const KEY = "imrohan550@gmail.com";
 
-// Socket.io
-const io = require("socket.io")(server);
-io.on("connection", socket => {
-  socket.on("disconnect", () => {
-    connectedSockets = connectedSockets.filter(user => user.socket != socket);
-  });
-  socket.on("login", id => {
-    connectedSockets = [...connectedSockets, { id: id, socket: socket }];
-  });
-  socket.on("message-send", data => {
-    var tmp = connectedSockets.find(user => user.id == data.dest_id);
-    chatBuffer.push(data);
-    if (tmp != undefined) {
-      tmp.socket.emit("message-recv", data);
-    }
-  });
-});
+// Asynchronous write messages to DB
+setInterval(() => {
+  if (chatBuffer.length > 0) {
+    chatBuffer.forEach(message => {
+      db.addMessage(message);
+    });
+  }
+  chatBuffer = [];
+}, 1000);
 
 // The Routes
 app.post("/api/login", (req, res) => {
@@ -62,8 +49,10 @@ app.post("/api/login", (req, res) => {
     };
     if (data.status == 200) {
       response.token = jwt.sign({ user: data.user }, KEY);
+      res.status(data.status).json(response);
+      return;
     }
-    res.status(data.status).json(response);
+    res.status(data.status).json({ error: "Username or password incorrect" });
   });
 });
 app.post("/api/register", (req, res) => {
@@ -113,11 +102,26 @@ app.post("/api/chats", authorize, (req, res) => {
     res.json(data);
   });
 });
-setInterval(() => {
-  if (chatBuffer.length > 0) {
-    chatBuffer.forEach(message => {
-      db.addMessage(message);
-    });
-  }
-  chatBuffer = [];
-}, 1000);
+
+// Setting up the server
+const server = app.listen(PORT, () => {
+  console.log("Server running at " + PORT);
+});
+
+// Socket.io
+const io = require("socket.io")(server);
+io.on("connection", socket => {
+  socket.on("disconnect", () => {
+    connectedSockets = connectedSockets.filter(user => user.socket != socket);
+  });
+  socket.on("login", id => {
+    connectedSockets = [...connectedSockets, { id: id, socket: socket }];
+  });
+  socket.on("message-send", data => {
+    var tmp = connectedSockets.find(user => user.id == data.dest_id);
+    chatBuffer.push(data);
+    if (tmp != undefined) {
+      tmp.socket.emit("message-recv", data);
+    }
+  });
+});
