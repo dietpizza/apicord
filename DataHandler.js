@@ -40,20 +40,23 @@ class DataHandler {
   }
   authenticate(username, hash, callback) {
     var response = {
-      status: 200,
-      user: {}
+      status: 401,
+      user: undefined
     };
-    db.each("SELECT * FROM users", (err, user) => {
+    db.all("SELECT * FROM users", (err, users) => {
       if (err) {
-        response.status = 500;
-      }
-      if (user.username == username && user.hash == hash) {
-        delete user.hash;
-        response.user = user;
         callback(response);
+        return;
       }
+      users.forEach(user => {
+        if (user.username == username && user.hash == hash) {
+          delete user.hash;
+          response.user = user;
+          response.status = 200;
+        }
+      });
+      callback(response);
     });
-    return response;
   }
 }
 

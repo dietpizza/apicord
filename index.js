@@ -22,7 +22,7 @@ function authorize(req, res, next) {
   if (req.body.token != undefined) {
     jwt.verify(req.body.token, KEY, (err, decoded) => {
       if (err) {
-        res.status(500).json({ status: 500 });
+        res.status(401).json({ error: "Not authorized!" });
       }
       return next();
     });
@@ -58,8 +58,11 @@ io.on("connection", socket => {
 app.post("/api/login", (req, res) => {
   db.authenticate(req.body.username, Hash(req.body.passwd), data => {
     var response = {
-      token: jwt.sign({ user: data.user }, KEY)
+      token: undefined
     };
+    if (data.status == 200) {
+      response.token = jwt.sign({ user: data.user }, KEY);
+    }
     res.status(data.status).json(response);
   });
 });
@@ -104,8 +107,9 @@ app.post("/api/users", authorize, (req, res) => {
     return;
   });
 });
-app.post("/api/chats", (req, res) => {
-  db.getChat(req.body.src, req.body.dest, data => {
+app.post("/api/chats", authorize, (req, res) => {
+  user = jwtDecode(req.body.token).user;
+  db.getChat(user.id, req.body.target, data => {
     res.json(data);
   });
 });
