@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const Hash = require("sha256");
+const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
 const jwtDecode = require("jwt-decode");
 const DB = require("./DataHandler");
@@ -43,7 +43,7 @@ setInterval(() => {
 
 // The Routes
 app.post("/api/login", (req, res) => {
-  db.authenticate(req.body.username, Hash(req.body.passwd), data => {
+  db.authenticate(req.body.username, sha256(req.body.passwd), data => {
     var response = {
       token: undefined
     };
@@ -77,7 +77,7 @@ app.post("/api/register", (req, res) => {
         lname: req.body.lname,
         username: req.body.username,
         email: req.body.email,
-        hash: Hash(req.body.passwd),
+        hash: sha256(req.body.passwd),
         sex: req.body.sex
       };
       db.addUser(user);
