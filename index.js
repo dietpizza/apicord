@@ -121,9 +121,25 @@ const io = require("socket.io")(server);
 io.on("connection", socket => {
   socket.on("disconnect", () => {
     connectedSockets = connectedSockets.filter(user => user.socket != socket);
+    var connectedIDs = [];
+    connectedSockets.forEach(el => {
+      connectedIDs.push(el.id);
+    });
+    console.log(connectedIDs);
+    connectedSockets.forEach(el => {
+      el.socket.emit("online-list", connectedIDs);
+    });
   });
   socket.on("login", id => {
     connectedSockets = [...connectedSockets, { id: id, socket: socket }];
+    var connectedIDs = [];
+    connectedSockets.forEach(el => {
+      connectedIDs.push(el.id);
+    });
+    console.log(connectedIDs);
+    connectedSockets.forEach(el => {
+      el.socket.emit("online-list", connectedIDs);
+    });
   });
   socket.on("message-send", data => {
     var tmp = connectedSockets.find(user => user.id == data.dest_id);
