@@ -33,10 +33,27 @@ class DataHandler {
     );
   }
   addUser(user) {
-    db.run(
-      `INSERT INTO users (fname,lname,username,email,hash,sex) VALUES (?,?,?,?,?,?)`,
-      [user.fname, user.lname, user.username, user.email, user.hash, user.sex]
-    );
+    db.serialize(() => {
+      db.run(`CREATE TABLE IF NOT EXISTS users (
+        id	INTEGER PRIMARY KEY AUTOINCREMENT,
+        fname	TEXT,
+        lname	TEXT,
+        username	TEXT,
+        email	TEXT,
+        hash	TEXT,
+        sex	INTEGER
+      )`);
+      db.run(`CREATE TABLE IF NOT EXISTS messages (
+        users	TEXT,
+        msg_id	INTEGER,
+        sender_id	INTEGER,
+        content	TEXT
+      )`);
+      db.run(
+        `INSERT INTO users (fname,lname,username,email,hash,sex) VALUES (?,?,?,?,?,?)`,
+        [user.fname, user.lname, user.username, user.email, user.hash, user.sex]
+      );
+    });
   }
   authenticate(username, hash, callback) {
     var response = {

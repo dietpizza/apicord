@@ -71,17 +71,17 @@ app.post("/api/register", (req, res) => {
     var response = {
       status: 200
     };
-    allUsers.forEach(element => {
-      if (
-        element.username == req.body.username ||
-        element.email == req.body.email
-      ) {
-        response.status = 400;
-        res
-          .status(response.status)
-          .json({ error: "Username or email already registered" });
-      }
-    });
+    // allUsers.forEach(element => {
+    //   if (
+    //     element.username == req.body.username ||
+    //     element.email == req.body.email
+    //   ) {
+    //     response.status = 400;
+    //     res
+    //       .status(response.status)
+    //       .json({ error: "Username or email already registered" });
+    //   }
+    // });
     if (response.status == 200) {
       var user = {
         fname: req.body.fname,
