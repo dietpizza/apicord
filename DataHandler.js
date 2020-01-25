@@ -32,7 +32,10 @@ class DataHandler {
       [message.users, message.msg_id, message.sender_id, message.content]
     );
   }
-  addUser(user) {
+  addUser(user, callback) {
+    var response = {
+      status: 200
+    };
     db.serialize(() => {
       db.run(`CREATE TABLE IF NOT EXISTS users (
         id	INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,10 +52,27 @@ class DataHandler {
         sender_id	INTEGER,
         content	TEXT
       )`);
-      db.run(
-        `INSERT INTO users (fname,lname,username,email,hash,sex) VALUES (?,?,?,?,?,?)`,
-        [user.fname, user.lname, user.username, user.email, user.hash, user.sex]
-      );
+      db.all("SELECT * FROM users", (err, data) => {
+        data.forEach(el => {
+          if (el.username == user.username || el.email == user.email) {
+            response.status = 409;
+          }
+        });
+        if (response.status == 200) {
+          db.run(
+            `INSERT INTO users (fname,lname,username,email,hash,sex) VALUES (?,?,?,?,?,?)`,
+            [
+              user.fname,
+              user.lname,
+              user.username,
+              user.email,
+              user.hash,
+              user.sex
+            ]
+          );
+        }
+        callback(response);
+      });
     });
   }
   authenticate(username, hash, callback) {

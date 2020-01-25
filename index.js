@@ -67,32 +67,21 @@ app.post("/api/login", (req, res) => {
   });
 });
 app.post("/api/register", (req, res) => {
-  db.getUsers(allUsers => {
-    var response = {
-      status: 200
-    };
-    // allUsers.forEach(element => {
-    //   if (
-    //     element.username == req.body.username ||
-    //     element.email == req.body.email
-    //   ) {
-    //     response.status = 400;
-    //     res
-    //       .status(response.status)
-    //       .json({ error: "Username or email already registered" });
-    //   }
-    // });
+  var user = {
+    fname: req.body.fname,
+    lname: req.body.lname,
+    username: req.body.username,
+    email: req.body.email,
+    hash: sha256(req.body.passwd),
+    sex: req.body.sex
+  };
+  db.addUser(user, response => {
     if (response.status == 200) {
-      var user = {
-        fname: req.body.fname,
-        lname: req.body.lname,
-        username: req.body.username,
-        email: req.body.email,
-        hash: sha256(req.body.passwd),
-        sex: req.body.sex
-      };
-      db.addUser(user);
       res.status(200).json({ message: "User Registered!" });
+    } else {
+      res
+        .status(response.status)
+        .json({ error: "Username or email already registered!" });
     }
   });
 });
