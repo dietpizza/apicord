@@ -5,15 +5,15 @@ const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
 
 // Relative dependencies
-const DB = require("./DataHandler");
-const db = new DB("./data/data.db");
+const MongoDB = require("./db");
+const db = new MongoDB("./data/data.db");
 
 // Express instance
 const app = express();
 
 // Scratch Variables
 var chatBuffer = [];
-var connectedSockets = [];
+var connectedUsers = [];
 
 // Adding middlewares to express instance
 app.use(cors());
@@ -43,27 +43,36 @@ const KEY = "imrohan550@gmail.com";
 // Asynchronous write messages to DB
 setInterval(() => {
   if (chatBuffer.length > 0) {
-    chatBuffer.forEach(message => {
-      db.addMessage(message);
-    });
+    db.addMessages(chatBuffer);
   }
   chatBuffer = [];
 }, 1000);
 
 // The Routes
 app.post("/api/login", (req, res) => {
+  var loggedin = false;
   db.authenticate(req.body.username, sha256(req.body.passwd), data => {
     var response = {
       token: undefined
     };
     if (data.status == 200) {
-      response.token = jwt.sign({ user: data.user }, KEY, {
-        expiresIn: 604800
+      connectedUsers.forEach(el => {
+        if (el.id == data.user.id) {
+          res
+            .status(409)
+            .json({ error: "Already logged in on another device" });
+          loggedin = true;
+        }
       });
-      res.status(data.status).json(response);
-      return;
+      if (loggedin == false) {
+        response.token = jwt.sign({ user: data.user }, KEY, {
+          expiresIn: 604800
+        });
+        res.status(200).json(response);
+      }
+    } else {
+      res.status(data.status).json({ error: "Username or password incorrect" });
     }
-    res.status(data.status).json({ error: "Username or password incorrect" });
   });
 });
 app.post("/api/register", (req, res) => {
@@ -98,7 +107,7 @@ app.post("/api/users", authorize, (req, res) => {
 });
 app.post("/api/chats", authorize, (req, res) => {
   user = res.locals.user;
-  db.getChat(user.id, req.body.target, data => {
+  db.getMessages(user._id, req.body.target, data => {
     res.json(data);
   });
 });
@@ -120,29 +129,27 @@ const server = app.listen(PORT, () => {
 const io = require("socket.io")(server);
 io.on("connection", socket => {
   socket.on("disconnect", () => {
-    connectedSockets = connectedSockets.filter(user => user.socket != socket);
+    connectedUsers = connectedUsers.filter(user => user.socket != socket);
     var connectedIDs = [];
-    connectedSockets.forEach(el => {
+    connectedUsers.forEach(el => {
       connectedIDs.push(el.id);
     });
-    console.log(connectedIDs);
-    connectedSockets.forEach(el => {
+    connectedUsers.forEach(el => {
       el.socket.emit("online-list", connectedIDs);
     });
   });
   socket.on("login", id => {
-    connectedSockets = [...connectedSockets, { id: id, socket: socket }];
+    connectedUsers = [...connectedUsers, { id: id, socket: socket }];
     var connectedIDs = [];
-    connectedSockets.forEach(el => {
+    connectedUsers.forEach(el => {
       connectedIDs.push(el.id);
     });
-    console.log(connectedIDs);
-    connectedSockets.forEach(el => {
+    connectedUsers.forEach(el => {
       el.socket.emit("online-list", connectedIDs);
     });
   });
   socket.on("message-send", data => {
-    var tmp = connectedSockets.find(user => user.id == data.dest_id);
+    var tmp = connectedUsers.find(user => user.id == data.dest_id);
     chatBuffer.push(data);
     if (tmp != undefined) {
       tmp.socket.emit("message-recv", data);
