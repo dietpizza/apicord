@@ -5,7 +5,7 @@ const local = "mongodb://localhost:27017/";
 const MongoClient = require("mongodb").MongoClient;
 const uuid = require("uuid/v1");
 
-const db = new MongoClient(local, {
+const client = new MongoClient(local, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -16,35 +16,33 @@ class MongoInterface {
       status: 401,
       user: undefined
     };
-    db.connect(err => {
+    client.connect(err => {
       if (err) {
         response.status = 500;
         callback(response);
         return;
       }
-      const users = db.db("cord").collection("users");
+      const users = client.db("cord").collection("users");
       users
-        .find({})
+        .find({ username })
         .toArray()
         .then(data => {
-          data.forEach(el => {
-            if (el.username == username && el.hash == hash) {
-              delete el.hash;
-              response.user = el;
-              response.status = 200;
-            }
-          });
+          if (data.length == 1 && data[0].hash == hash) {
+            response.status = 200;
+            delete data[0].hash;
+            response.user = data[0];
+          }
           callback(response);
         });
     });
   }
   addMessages(data) {
-    db.connect(err => {
+    client.connect(err => {
       if (err) {
         console.log("[addMessages]" + err);
         return;
       } else {
-        const messages = db.db("cord").collection("messages");
+        const messages = client.db("cord").collection("messages");
         messages.insertMany(data);
       }
     });
@@ -53,13 +51,13 @@ class MongoInterface {
     var response = {
       status: 200
     };
-    db.connect(err => {
+    client.connect(err => {
       if (err) {
         response.status = 500;
-        db.close();
+        client.close();
         callback(response);
       } else {
-        const users = db.db("cord").collection("users");
+        const users = client.db("cord").collection("users");
         users
           .find({})
           .toArray()
@@ -72,7 +70,7 @@ class MongoInterface {
               }
             });
             if (response.status == 200) {
-              user._id = uuid();
+              user.id = uuid();
               users.insertOne(user);
               callback(response);
             }
@@ -85,13 +83,13 @@ class MongoInterface {
       status: 200,
       users: undefined
     };
-    db.connect(err => {
+    client.connect(err => {
       if (err) {
         console.log("[getUsers]" + err);
         response.status = 500;
         callback(response);
       } else {
-        const users = db.db("cord").collection("users");
+        const users = client.db("cord").collection("users");
         users
           .find({})
           .toArray()
@@ -107,13 +105,13 @@ class MongoInterface {
       status: 200,
       messages: undefined
     };
-    db.connect(err => {
+    client.connect(err => {
       if (err) {
         console.log("[getMessages]" + err);
         response.status = 500;
         callback(response);
       } else {
-        const messages = db.db("cord").collection("messages");
+        const messages = client.db("cord").collection("messages");
         messages
           .find({
             $or: [
@@ -130,6 +128,7 @@ class MongoInterface {
           .toArray()
           .then(data => {
             response.messages = data;
+            console.log(data);
             callback(response);
           });
       }

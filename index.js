@@ -71,7 +71,7 @@ app.post("/api/login", (req, res) => {
         res.status(200).json(response);
       }
     } else {
-      res.status(data.status).json({ error: "Username or password incorrect" });
+      res.status(401).json({ error: "Username or password incorrect" });
     }
   });
 });
@@ -95,20 +95,24 @@ app.post("/api/register", (req, res) => {
   });
 });
 app.post("/api/users", authorize, (req, res) => {
-  db.getUsers(users => {
+  db.getUsers(response => {
     user = res.locals.user;
-    users.forEach(user => {
+    response.users.forEach(user => {
       delete user.hash;
     });
-    users = users.filter(item => item.username != user.username);
-    res.json(users);
+    response.users = response.users.filter(
+      item => item.username != user.username
+    );
+    res.json(response.users);
     return;
   });
 });
-app.post("/api/chats", authorize, (req, res) => {
+app.post("/api/messages", authorize, (req, res) => {
   user = res.locals.user;
-  db.getMessages(user._id, req.body.target, data => {
-    res.json(data);
+  console.log(user);
+  console.log(req.body.target);
+  db.getMessages(user.id, req.body.target, data => {
+    res.status(data.status).json(data.messages);
   });
 });
 
