@@ -5,65 +5,30 @@ const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
 
 // Relative dependencies
-const MongoInstance = require("./db");
+const MongoInterface = require("./db");
 const MongoDB = require("mongodb").MongoClient;
 
 // MongoDB config
+var db = undefined;
 const production =
-  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/test";
+  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
 const local = "mongodb://localhost:27017/";
 const client = new MongoDB(local, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   poolSize: 20
 });
-var db;
 
 // Express instance
 const app = express();
 
-// Connecting to MongoDB and staring server
-client.connect(err => {
-  if (err) {
-    console.log(err);
-  } else {
-    db = new MongoInstance(client);
-    const server = app.listen(PORT, () => {
-      console.log("Server running at " + PORT);
-    });
-    // Socket IO
-    const io = require("socket.io")(server);
-    io.on("connection", socket => {
-      socket.on("disconnect", () => {
-        connectedUsers = connectedUsers.filter(user => user.socket != socket);
-        var connectedIDs = [];
-        connectedUsers.forEach(el => {
-          connectedIDs.push(el.id);
-        });
-        connectedUsers.forEach(el => {
-          el.socket.emit("online-list", connectedIDs);
-        });
-      });
-      socket.on("login", id => {
-        connectedUsers = [...connectedUsers, { id: id, socket: socket }];
-        var connectedIDs = [];
-        connectedUsers.forEach(el => {
-          connectedIDs.push(el.id);
-        });
-        connectedUsers.forEach(el => {
-          el.socket.emit("online-list", connectedIDs);
-        });
-      });
-      socket.on("message-send", data => {
-        var tmp = connectedUsers.find(user => user.id == data.dest_id);
-        chatBuffer.push(data);
-        if (tmp != undefined) {
-          tmp.socket.emit("message-recv", data);
-        }
-      });
-    });
-  }
-});
+// Cleanup function
+const cleanup = function() {
+  client.close().then(() => {
+    console.log("\nConnection to MongoDB closed.");
+    process.exit(0);
+  });
+};
 
 // Scratch Variables
 var chatBuffer = [];
@@ -92,9 +57,57 @@ function authorize(req, res, next) {
 
 // Global Variables
 const PORT = process.env.PORT || 3000;
-const KEY = "imrohan550@gmail.com";
+const KEY =
+  "MIGJAoGBAIHgPBj0Z5JaGdSrHYEHgmposxsgO8T4xE3sXPSKuooFwghrx3FbZgrUY4urknp0sPtAwPjSC4/5ZP4M29sexrkd1McaAP6lTiJImSIqpWIpMTqxSi240yL4SmiAaeI9oxzdkBSSMaz+hdAO2qcBTkWHBOYsDyaNN8vlKOouXk9RAgMBAAE=";
 
-// Asynchronous write messages to DB
+
+// Connecting to MongoDB and staring server
+client.connect(err => {
+  if (err) {
+    console.log("Error connecting to MongoDB.");
+    process.exit(0);
+  } else {
+    db = new MongoInterface(client);
+    const server = app.listen(PORT, () => {
+      console.log("Server running at port: " + PORT);
+      process.on("SIGTERM", cleanup);
+      process.on("SIGINT", cleanup);
+    });
+    // Socket IO
+    const io = require("socket.io")(server);
+    io.on("connection", socket => {
+      socket.on("disconnect", () => {
+        connectedUsers = connectedUsers.filter(user => user.socket != socket);
+        var connectedIDs = [];
+        connectedUsers.forEach(el => {
+          connectedIDs.push(el.id);
+        });
+        connectedUsers.forEach(el => {
+          el.socket.emit("online-list", connectedIDs);
+        });
+      });
+      socket.on("login", id => {
+        connectedUsers = [...connectedUsers, { id: id, socket: socket }];
+        var connectedIDs = [];
+        connectedUsers.forEach(el => {
+          connectedIDs.push(el.id);
+        });
+        connectedUsers.forEach(el => {
+          el.socket.emit("online-list", connectedIDs);
+        });
+      });
+      socket.on("message-send", data => {
+        var tmp = connectedUsers.find(user => user.id == data.to);
+        chatBuffer.push(data);
+        if (tmp != undefined) {
+          tmp.socket.emit("message-recv", data);
+        }
+      });
+    });
+  }
+});
+
+// Asynchronously write messages to DB
 setInterval(() => {
   if (chatBuffer.length > 0) {
     db.addMessages(chatBuffer);
