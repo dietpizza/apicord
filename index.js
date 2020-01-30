@@ -5,11 +5,65 @@ const sha256 = require("sha256");
 const jwt = require("jsonwebtoken");
 
 // Relative dependencies
-const MongoDB = require("./db");
-const db = new MongoDB("./data/data.db");
+const MongoInstance = require("./db");
+const MongoDB = require("mongodb").MongoClient;
+
+// MongoDB config
+const production =
+  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/test";
+const local = "mongodb://localhost:27017/";
+const client = new MongoDB(local, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  poolSize: 20
+});
+var db;
 
 // Express instance
 const app = express();
+
+// Connecting to MongoDB and staring server
+client.connect(err => {
+  if (err) {
+    console.log(err);
+  } else {
+    db = new MongoInstance(client);
+    const server = app.listen(PORT, () => {
+      console.log("Server running at " + PORT);
+    });
+    // Socket IO
+    const io = require("socket.io")(server);
+    io.on("connection", socket => {
+      socket.on("disconnect", () => {
+        connectedUsers = connectedUsers.filter(user => user.socket != socket);
+        var connectedIDs = [];
+        connectedUsers.forEach(el => {
+          connectedIDs.push(el.id);
+        });
+        connectedUsers.forEach(el => {
+          el.socket.emit("online-list", connectedIDs);
+        });
+      });
+      socket.on("login", id => {
+        connectedUsers = [...connectedUsers, { id: id, socket: socket }];
+        var connectedIDs = [];
+        connectedUsers.forEach(el => {
+          connectedIDs.push(el.id);
+        });
+        connectedUsers.forEach(el => {
+          el.socket.emit("online-list", connectedIDs);
+        });
+      });
+      socket.on("message-send", data => {
+        var tmp = connectedUsers.find(user => user.id == data.dest_id);
+        chatBuffer.push(data);
+        if (tmp != undefined) {
+          tmp.socket.emit("message-recv", data);
+        }
+      });
+    });
+  }
+});
 
 // Scratch Variables
 var chatBuffer = [];
@@ -109,8 +163,6 @@ app.post("/api/users", authorize, (req, res) => {
 });
 app.post("/api/messages", authorize, (req, res) => {
   user = res.locals.user;
-  console.log(user);
-  console.log(req.body.target);
   db.getMessages(user.id, req.body.target, data => {
     res.status(data.status).json(data.messages);
   });
@@ -122,41 +174,4 @@ app.post("*", (req, res) => {
 });
 app.get("*", (req, res) => {
   res.status(404).json({ error: "Page not found!" });
-});
-
-// Setting up the server
-const server = app.listen(PORT, () => {
-  console.log("Server running at " + PORT);
-});
-
-// Socket.io
-const io = require("socket.io")(server);
-io.on("connection", socket => {
-  socket.on("disconnect", () => {
-    connectedUsers = connectedUsers.filter(user => user.socket != socket);
-    var connectedIDs = [];
-    connectedUsers.forEach(el => {
-      connectedIDs.push(el.id);
-    });
-    connectedUsers.forEach(el => {
-      el.socket.emit("online-list", connectedIDs);
-    });
-  });
-  socket.on("login", id => {
-    connectedUsers = [...connectedUsers, { id: id, socket: socket }];
-    var connectedIDs = [];
-    connectedUsers.forEach(el => {
-      connectedIDs.push(el.id);
-    });
-    connectedUsers.forEach(el => {
-      el.socket.emit("online-list", connectedIDs);
-    });
-  });
-  socket.on("message-send", data => {
-    var tmp = connectedUsers.find(user => user.id == data.dest_id);
-    chatBuffer.push(data);
-    if (tmp != undefined) {
-      tmp.socket.emit("message-recv", data);
-    }
-  });
 });
