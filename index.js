@@ -10,10 +10,9 @@ const MongoDB = require("mongodb").MongoClient;
 
 // MongoDB config
 var db = undefined;
-const production =
+const atlas =
   "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
-const local = "mongodb://localhost:27017/";
-const client = new MongoDB(local, {
+const client = new MongoDB(atlas , {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   poolSize: 20
