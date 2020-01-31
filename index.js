@@ -14,7 +14,7 @@ const atlas =
   "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
 const dev =
   "mongodb://uivdc0kcbp94j7lrfxl3:INyrOMbGBnu8JL96jI24@bzfx2jogqlgwafr-mongodb.services.clever-cloud.com:27017/bzfx2jogqlgwafr";
-const client = new MongoDB(dev, {
+const client = new MongoDB(atlas, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   poolSize: 20
