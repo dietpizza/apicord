@@ -4,7 +4,7 @@
   "description": "Backend for the Cord Messenger",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --ignore './data/' --ignore './.git/' --ignore './node_modules/' index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Rohan Biswas",
