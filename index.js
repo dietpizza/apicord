@@ -12,7 +12,9 @@ const MongoDB = require("mongodb").MongoClient;
 var db = undefined;
 const atlas =
   "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
-const client = new MongoDB(atlas , {
+const dev =
+  "mongodb://uivdc0kcbp94j7lrfxl3:INyrOMbGBnu8JL96jI24@bzfx2jogqlgwafr-mongodb.services.clever-cloud.com:27017/bzfx2jogqlgwafr";
+const client = new MongoDB(dev, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   poolSize: 20
@@ -58,7 +60,6 @@ function authorize(req, res, next) {
 const PORT = process.env.PORT || 3000;
 const KEY =
   "MIGJAoGBAIHgPBj0Z5JaGdSrHYEHgmposxsgO8T4xE3sXPSKuooFwghrx3FbZgrUY4urknp0sPtAwPjSC4/5ZP4M29sexrkd1McaAP6lTiJImSIqpWIpMTqxSi240yL4SmiAaeI9oxzdkBSSMaz+hdAO2qcBTkWHBOYsDyaNN8vlKOouXk9RAgMBAAE=";
-
 
 // Connecting to MongoDB and staring server
 client.connect(err => {
