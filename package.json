@@ -1,7 +1,7 @@
 {
   "name": "cord-backend",
   "version": "0.0.1",
-  "description": "Backend for the Cord Messenger",
+  "description": "Backend for the DevCord Messenger",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
