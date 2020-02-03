@@ -103,6 +103,13 @@ client.connect(err => {
           tmp.socket.emit("message-recv", data);
         }
       });
+      socket.on("typing", data => {
+        connectedUsers.forEach(user => {
+          if (user.id == data.to) {
+            user.socket.emit("typing", data);
+          }
+        });
+      });
     });
   }
 });
