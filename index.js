@@ -106,15 +106,9 @@ client.connect(err => {
             (user.id == data.from && user.socket.id != socket.id)
           );
         });
-        // var fromSockets = connectedSockets.filter(user => {
-        //   return user.id == data.from && user.socket.id != socket.id;
-        // });
         targetSockets.forEach(user => {
           user.socket.emit("message-recv", data);
         });
-        // fromSockets.forEach(user => {
-        //   user.socket.emit("message-recv", data);
-        // });
       });
       socket.on("typing", data => {
         connectedSockets.forEach(user => {
