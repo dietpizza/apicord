@@ -102,10 +102,7 @@ client.connect(err => {
           return user.id == data.to;
         });
         var fromSockets = connectedUsers.filter(user => {
-          return user.id == data.from;
-        });
-        fromSockets = fromSockets.filter(user => {
-          return socket != user.socket;
+          return user.id == data.from && socket != user.socket;
         });
         targetSockets.forEach(user => {
           user.socket.emit("message-recv", data);
