@@ -98,16 +98,19 @@ client.connect(err => {
       });
       socket.on("message-send", data => {
         chatBuffer.push(data);
-        var tmpUsers = connectedUsers.filter(user => {
+        var targetSockets = connectedUsers.filter(user => {
           return user.id == data.to || user.id == data.from;
         });
-        var tmpUsers2 = connectedUsers.filter(user => {
-          return socket != user.socket && user.id == data.from;
+        var fromSockets = connectedUsers.filter(user => {
+          return user.id == data.from;
         });
-        tmpUsers.forEach(user => {
+        fromSockets = fromSockets.filter(user => {
+          return socket != user.socket;
+        });
+        targetSockets.forEach(user => {
           user.socket.emit("message-recv", data);
         });
-        tmpUsers2.forEach(user => {
+        fromSockets.forEach(user => {
           user.socket.emit("message-recv", data);
         });
       });
