@@ -99,7 +99,7 @@ client.connect(err => {
       socket.on("message-send", data => {
         chatBuffer.push(data);
         var targetSockets = connectedUsers.filter(user => {
-          return user.id == data.to || user.id == data.from;
+          return user.id == data.to;
         });
         var fromSockets = connectedUsers.filter(user => {
           return user.id == data.from;
