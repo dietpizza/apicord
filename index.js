@@ -33,7 +33,7 @@ const cleanup = function() {
 
 // Scratch Variables
 var chatBuffer = [];
-var connectedUsers = [];
+var connectedSockets = [];
 
 // Adding middlewares to express instance
 app.use(cors());
@@ -77,32 +77,34 @@ client.connect(err => {
     const io = require("socket.io")(server);
     io.on("connection", socket => {
       socket.on("disconnect", () => {
-        connectedUsers = connectedUsers.filter(user => user.socket != socket);
+        connectedSockets = connectedSockets.filter(
+          user => user.socket != socket
+        );
         var connectedIDs = [];
-        connectedUsers.forEach(el => {
+        connectedSockets.forEach(el => {
           connectedIDs.push(el.id);
         });
-        connectedUsers.forEach(el => {
+        connectedSockets.forEach(el => {
           el.socket.emit("online-list", connectedIDs);
         });
       });
       socket.on("login", id => {
-        connectedUsers.push({ id: id, socket: socket });
+        connectedSockets.push({ id: id, socket: socket });
         var connectedIDs = [];
-        connectedUsers.forEach(el => {
+        connectedSockets.forEach(el => {
           connectedIDs.push(el.id);
         });
-        connectedUsers.forEach(el => {
+        connectedSockets.forEach(el => {
           el.socket.emit("online-list", connectedIDs);
         });
       });
       socket.on("message-send", data => {
         chatBuffer.push(data);
-        var targetSockets = connectedUsers.filter(user => {
+        var targetSockets = connectedSockets.filter(user => {
           return user.id == data.to;
         });
-        var fromSockets = connectedUsers.filter(user => {
-          return user.id == data.from;
+        var fromSockets = connectedSockets.filter(user => {
+          return user.id == data.from && user.socket.id != socket.id;
         });
         targetSockets.forEach(user => {
           user.socket.emit("message-recv", data);
@@ -112,7 +114,7 @@ client.connect(err => {
         });
       });
       socket.on("typing", data => {
-        connectedUsers.forEach(user => {
+        connectedSockets.forEach(user => {
           if (user.id == data.to) {
             user.socket.emit("typing", data);
           }
