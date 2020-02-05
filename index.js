@@ -97,11 +97,13 @@ client.connect(err => {
         });
       });
       socket.on("message-send", data => {
-        var tmp = connectedUsers.find(user => user.id == data.to);
         chatBuffer.push(data);
-        if (tmp != undefined) {
-          tmp.socket.emit("message-recv", data);
-        }
+        var tmpUsers = connectedUsers.filter(user => {
+          user.id == data.to || (user.socket != socket && user.id == data.from);
+        });
+        tmpUsers.forEach(user => {
+          user.socket.emit("message-recv", data);
+        });
       });
       socket.on("typing", data => {
         connectedUsers.forEach(user => {
@@ -130,20 +132,10 @@ app.post("/api/login", (req, res) => {
       token: undefined
     };
     if (data.status == 200) {
-      connectedUsers.forEach(el => {
-        if (el.id == data.user.id) {
-          res
-            .status(409)
-            .json({ error: "Already logged in on another device" });
-          loggedin = true;
-        }
+      response.token = jwt.sign({ user: data.user }, KEY, {
+        expiresIn: 604800
       });
-      if (loggedin == false) {
-        response.token = jwt.sign({ user: data.user }, KEY, {
-          expiresIn: 604800
-        });
-        res.status(200).json(response);
-      }
+      res.status(200).json(response);
     } else {
       res.status(401).json({ error: "Username or password incorrect" });
     }
