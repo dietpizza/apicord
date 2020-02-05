@@ -101,10 +101,13 @@ client.connect(err => {
         var tmpUsers = connectedUsers.filter(user => {
           return user.id == data.to || user.id == data.from;
         });
-        var tmpUsers = tmpUsers.filter(user => {
+        var tmpUsers2 = connectedUsers.filter(user => {
           return socket != user.socket && user.id == data.from;
         });
         tmpUsers.forEach(user => {
+          user.socket.emit("message-recv", data);
+        });
+        tmpUsers2.forEach(user => {
           user.socket.emit("message-recv", data);
         });
       });
