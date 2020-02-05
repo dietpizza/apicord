@@ -87,7 +87,7 @@ client.connect(err => {
         });
       });
       socket.on("login", id => {
-        connectedUsers = [...connectedUsers, { id: id, socket: socket }];
+        connectedUsers.push({ id: id, socket: socket });
         var connectedIDs = [];
         connectedUsers.forEach(el => {
           connectedIDs.push(el.id);
