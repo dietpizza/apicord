@@ -8,13 +8,15 @@ const jwt = require("jsonwebtoken");
 const MongoInterface = require("./db");
 const MongoDB = require("mongodb").MongoClient;
 
+// Global Variables
+const PORT = process.env.PORT || 3000;
+const JWT_KEY = process.env.JWT_KEY || "THIS IS THE KEY FOR SIGNING JWT TOKENS";
+const MONGO_URI =
+  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
+
 // MongoDB config
 var db = undefined;
-const atlas =
-  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
-const dev =
-  "mongodb://uivdc0kcbp94j7lrfxl3:INyrOMbGBnu8JL96jI24@bzfx2jogqlgwafr-mongodb.services.clever-cloud.com:27017/bzfx2jogqlgwafr";
-const client = new MongoDB(atlas, {
+const client = new MongoDB(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   poolSize: 20
@@ -24,12 +26,6 @@ const client = new MongoDB(atlas, {
 const app = express();
 
 // Cleanup function
-const cleanup = function() {
-  client.close().then(() => {
-    console.log("\nConnection to MongoDB closed.");
-    process.exit(0);
-  });
-};
 
 // Scratch Variables
 var chatBuffer = [];
@@ -42,7 +38,7 @@ app.use(express.json());
 // Custom Middlewares
 function authorize(req, res, next) {
   if (req.body.token != undefined) {
-    jwt.verify(req.body.token, KEY, (err, decoded) => {
+    jwt.verify(req.body.token, JWT_KEY, (err, decoded) => {
       if (err) {
         res.status(401).json({ error: "Not authorized!" });
         return;
@@ -56,23 +52,29 @@ function authorize(req, res, next) {
   }
 }
 
-// Global Variables
-const PORT = process.env.PORT || 3000;
-const KEY =
-  "MIGJAoGBAIHgPBj0Z5JaGdSrHYEHgmposxsgO8T4xE3sXPSKuooFwghrx3FbZgrUY4urknp0sPtAwPjSC4/5ZP4M29sexrkd1McaAP6lTiJImSIqpWIpMTqxSi240yL4SmiAaeI9oxzdkBSSMaz+hdAO2qcBTkWHBOYsDyaNN8vlKOouXk9RAgMBAAE=";
-
-// Connecting to MongoDB and staring server
+// Connecting to MongoDB
 client.connect(err => {
   if (err) {
     console.log("Error connecting to MongoDB.");
     process.exit(0);
   } else {
     db = new MongoInterface(client);
+
+    // Cleanup function
+    const cleanup = function() {
+      client.close().then(() => {
+        if (chatBuffer.length > 0) db.addMessages(chatBuffer);
+        console.log("\nConnection to MongoDB closed.");
+        process.exit(0);
+      });
+    };
+    // Starting express server
     const server = app.listen(PORT, () => {
       console.log("Server running at port: " + PORT);
       process.on("SIGTERM", cleanup);
       process.on("SIGINT", cleanup);
     });
+
     // Socket IO
     const io = require("socket.io")(server);
     io.on("connection", socket => {
@@ -137,7 +139,7 @@ app.post("/api/login", (req, res) => {
       token: undefined
     };
     if (data.status == 200) {
-      response.token = jwt.sign({ user: data.user }, KEY, {
+      response.token = jwt.sign({ user: data.user }, JWT_KEY, {
         expiresIn: 604800
       });
       res.status(200).json(response);
