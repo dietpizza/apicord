@@ -139,9 +139,7 @@ app.post("/api/login", (req, res) => {
       token: undefined
     };
     if (data.status == 200) {
-      response.token = jwt.sign({ user: data.user }, JWT_KEY, {
-        expiresIn: 604800
-      });
+      response.token = jwt.sign({ user: data.user }, JWT_KEY);
       res.status(200).json(response);
     } else {
       res.status(401).json({ error: "Username or password incorrect" });
