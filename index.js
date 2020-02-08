@@ -1,16 +1,14 @@
 // Dependencies
 const express = require("express");
 const cors = require("cors");
-const sha256 = require("sha256");
-const jwt = require("jsonwebtoken");
 
 // Relative dependencies
+const socketio = require("./sockets");
 const MongoInterface = require("./db");
 const MongoDB = require("mongodb").MongoClient;
 
 // Global Variables
 const PORT = process.env.PORT || 3000;
-const JWT_KEY = process.env.JWT_KEY || "THIS IS THE KEY FOR SIGNING JWT TOKENS";
 const MONGO_URI =
   "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/";
 
@@ -25,32 +23,9 @@ const client = new MongoDB(MONGO_URI, {
 // Express instance
 const app = express();
 
-// Cleanup function
-
-// Scratch Variables
-var chatBuffer = [];
-var connectedSockets = [];
-
 // Adding middlewares to express instance
 app.use(cors());
 app.use(express.json());
-
-// Custom Middlewares
-function authorize(req, res, next) {
-  if (req.body.token != undefined) {
-    jwt.verify(req.body.token, JWT_KEY, (err, decoded) => {
-      if (err) {
-        res.status(401).json({ error: "Not authorized!" });
-        return;
-      }
-      res.locals.user = decoded.user;
-      return next();
-    });
-  } else {
-    res.status(401).json({ error: "Not authorized!" });
-    return;
-  }
-}
 
 // Connecting to MongoDB
 client.connect(err => {
@@ -63,7 +38,7 @@ client.connect(err => {
     // Cleanup function
     const cleanup = function() {
       client.close().then(() => {
-        if (chatBuffer.length > 0) db.addMessages(chatBuffer);
+        // if (chatBuffer.length > 0) db.addMessages(chatBuffer);
         console.log("\nConnection to MongoDB closed.");
         process.exit(0);
       });
@@ -74,121 +49,9 @@ client.connect(err => {
       process.on("SIGTERM", cleanup);
       process.on("SIGINT", cleanup);
     });
-
-    // Socket IO
-    const io = require("socket.io")(server);
-    io.on("connection", socket => {
-      socket.on("disconnect", () => {
-        connectedSockets = connectedSockets.filter(
-          user => user.socket != socket
-        );
-        var connectedIDs = [];
-        connectedSockets.forEach(el => {
-          connectedIDs.push(el.id);
-        });
-        connectedSockets.forEach(el => {
-          el.socket.emit("online-list", connectedIDs);
-        });
-      });
-      socket.on("login", id => {
-        connectedSockets.push({ id: id, socket: socket });
-        var connectedIDs = [];
-        connectedSockets.forEach(el => {
-          connectedIDs.push(el.id);
-        });
-        connectedSockets.forEach(el => {
-          el.socket.emit("online-list", connectedIDs);
-        });
-      });
-      socket.on("message-send", data => {
-        chatBuffer.push(data);
-        var targetSockets = connectedSockets.filter(user => {
-          return (
-            user.id == data.to ||
-            (user.id == data.from && user.socket.id != socket.id)
-          );
-        });
-        targetSockets.forEach(user => {
-          user.socket.emit("message-recv", data);
-        });
-      });
-      socket.on("typing", data => {
-        connectedSockets.forEach(user => {
-          if (user.id == data.to) {
-            user.socket.emit("typing", data);
-          }
-        });
-      });
-    });
+    const routes = require("./routes")(db);
+    app.use("/", routes);
+    // Socket.io
+    socketio(server, db);
   }
-});
-
-// Asynchronously write messages to DB
-setInterval(() => {
-  if (chatBuffer.length > 0) {
-    db.addMessages(chatBuffer);
-  }
-  chatBuffer = [];
-}, 1000);
-
-// The Routes
-app.post("/api/login", (req, res) => {
-  var loggedin = false;
-  db.authenticate(req.body.username, sha256(req.body.passwd), data => {
-    var response = {
-      token: undefined
-    };
-    if (data.status == 200) {
-      response.token = jwt.sign({ user: data.user }, JWT_KEY);
-      res.status(200).json(response);
-    } else {
-      res.status(401).json({ error: "Username or password incorrect" });
-    }
-  });
-});
-app.post("/api/register", (req, res) => {
-  var user = {
-    fname: req.body.fname,
-    lname: req.body.lname,
-    username: req.body.username,
-    email: req.body.email,
-    hash: sha256(req.body.passwd),
-    sex: req.body.sex
-  };
-  db.addUser(user, response => {
-    if (response.status == 200) {
-      res.status(200).json({ message: "User Registered!" });
-    } else {
-      res
-        .status(response.status)
-        .json({ error: "Username or email already registered!" });
-    }
-  });
-});
-app.post("/api/users", authorize, (req, res) => {
-  db.getUsers(response => {
-    user = res.locals.user;
-    response.users.forEach(user => {
-      delete user.hash;
-    });
-    response.users = response.users.filter(
-      item => item.username != user.username
-    );
-    res.json(response.users);
-    return;
-  });
-});
-app.post("/api/messages", authorize, (req, res) => {
-  user = res.locals.user;
-  db.getMessages(user.id, req.body.target, data => {
-    res.status(data.status).json(data.messages);
-  });
-});
-
-// Catch all 404 requests
-app.post("*", (req, res) => {
-  res.status(404).json({ error: "Page not found!" });
-});
-app.get("*", (req, res) => {
-  res.status(404).json({ error: "Page not found!" });
 });
