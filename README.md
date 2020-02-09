@@ -1,4 +1,4 @@
-# cord-front
+# apicord
 
 ## Project setup
 ```

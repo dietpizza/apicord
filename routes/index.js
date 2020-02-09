@@ -27,7 +27,6 @@ function routes(db) {
 
   // The Routes
   router.post("/api/login", (req, res) => {
-    var loggedin = false;
     db.authenticate(req.body.username, sha256(req.body.passwd), data => {
       var response = {
         token: undefined

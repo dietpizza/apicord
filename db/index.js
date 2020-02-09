@@ -1,13 +1,4 @@
-const production =
-  "mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/test";
-const local = "mongodb://localhost:27017/";
-
-const MongoClient = require("mongodb").MongoClient;
 const uuid = require("uuid/v1");
-// const client = new MongoClient(local, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true
-// });
 var client, users, messages;
 
 class MongoInterface {
@@ -41,10 +32,19 @@ class MongoInterface {
       status: 200
     };
     users
-      .find({ username: user.username })
+      .find({
+        $or: [
+          {
+            username: user.username
+          },
+          {
+            email: user.email
+          }
+        ]
+      })
       .toArray()
       .then(data => {
-        if (data.length > 0 && data[0].email == user.email) {
+        if (data.length > 0) {
           response.status = 409;
           callback(response);
         } else {
