@@ -86,7 +86,7 @@ class MongoInterface {
           }
         ]
       })
-      .sort({ date: 1 })
+      // .sort({ date: 1 })
       .toArray()
       .then(data => {
         response.messages = data;
