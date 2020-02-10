@@ -14,7 +14,10 @@ function sockets(server, db) {
       });
     });
     socket.on("login", id => {
-      connectedSockets.push({ id: id, socket: socket });
+      var tmp = connectedSockets.find(el => {
+        el.id == id;
+      });
+      if (tmp != undefined) connectedSockets.push({ id: id, socket: socket });
       var connectedIDs = [];
       connectedSockets.forEach(el => {
         connectedIDs.push(el.id);
