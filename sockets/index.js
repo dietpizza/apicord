@@ -23,16 +23,6 @@ function sockets(server, db) {
         el.socket.emit("online-list", connectedIDs);
       });
     });
-    socket.on("reconnect", id => {
-      connectedSockets.push({ id: id, socket: socket });
-      var connectedIDs = [];
-      connectedSockets.forEach(el => {
-        connectedIDs.push(el.id);
-      });
-      connectedSockets.forEach(el => {
-        el.socket.emit("online-list", connectedIDs);
-      });
-    });
     socket.on("message-send", data => {
       chatBuffer.push(data);
       var targetSockets = connectedSockets.filter(user => {
