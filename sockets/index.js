@@ -19,11 +19,7 @@ function sockets(server, db) {
       connectedSockets.forEach(el => {
         connectedIDs.push(el.id);
       });
-      connectedIDs = connectedIDs.splice(
-        0,
-        connectedIDs.length,
-        ...new Set(connectedIDs)
-      );
+      connectedIDs = [...new Set(connectedIDs)];
       connectedSockets.forEach(el => {
         el.socket.emit("online-list", connectedIDs);
       });
