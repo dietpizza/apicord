@@ -1,4 +1,5 @@
 function sockets(server, db) {
+  const uuid = require("uuid/v1");
   var connectedSockets = [];
   var chatBuffer = [];
   const io = require("socket.io")(server);
@@ -25,6 +26,7 @@ function sockets(server, db) {
       });
     });
     socket.on("message-send", data => {
+      data._id = uuid();
       chatBuffer.push(data);
       var targetSockets = connectedSockets.filter(user => {
         return (
