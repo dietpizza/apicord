@@ -26,7 +26,6 @@ function sockets(server, db) {
       });
     });
     socket.on("message-send", data => {
-      data._id = uuid();
       chatBuffer.push(data);
       var targetSockets = connectedSockets.filter(user => {
         return (
