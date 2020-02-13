@@ -34,7 +34,6 @@ function sockets(server, db) {
         );
       });
       socket.emit("message-d", data._id);
-      console.log("Firing message d");
       targetSockets.forEach(user => {
         user.socket.emit("message-recv", data);
       });
@@ -44,8 +43,6 @@ function sockets(server, db) {
       connectedSockets.forEach(el => {
         if (el.id == from) {
           el.socket.emit("message-rn", ids, sentBy);
-          console.log("Firing notifiaction");
-          console.log(ids);
         }
       });
     });
