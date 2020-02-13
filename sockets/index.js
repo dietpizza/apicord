@@ -1,5 +1,4 @@
 function sockets(server, db) {
-  const uuid = require("uuid/v1");
   var connectedSockets = [];
   var chatBuffer = [];
   const io = require("socket.io")(server);
@@ -26,6 +25,7 @@ function sockets(server, db) {
       });
     });
     socket.on("message-send", data => {
+      data.status = 1;
       chatBuffer.push(data);
       var targetSockets = connectedSockets.filter(user => {
         return (
@@ -33,8 +33,20 @@ function sockets(server, db) {
           (user.id == data.from && user.socket.id != socket.id)
         );
       });
+      socket.emit("message-d", data._id);
+      console.log("Firing message d");
       targetSockets.forEach(user => {
         user.socket.emit("message-recv", data);
+      });
+    });
+    socket.on("message-r", (ids, from, sentBy) => {
+      db.readMessages(ids);
+      connectedSockets.forEach(el => {
+        if (el.id == from) {
+          el.socket.emit("message-rn", ids, sentBy);
+          console.log("Firing notifiaction");
+          console.log(ids);
+        }
       });
     });
     socket.on("typing", data => {

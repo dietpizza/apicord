@@ -92,6 +92,19 @@ class MongoInterface {
         callback(response);
       });
   }
+  readMessages(ids) {
+    if (ids != null || ids != undefined)
+      ids.forEach(el => {
+        messages.updateOne(
+          { _id: el },
+          {
+            $set: {
+              status: 2
+            }
+          }
+        );
+      });
+  }
 }
 
 module.exports = MongoInterface;
