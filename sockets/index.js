@@ -1,6 +1,7 @@
 function sockets(server, db) {
   var connectedSockets = [];
   var chatBuffer = [];
+  var readBuffer = [];
   const io = require("socket.io")(server);
   io.on("connection", socket => {
     socket.on("disconnect", () => {
@@ -39,7 +40,7 @@ function sockets(server, db) {
       });
     });
     socket.on("message-r", (ids, from, sentBy) => {
-      db.readMessages(ids);
+      readBuffer = readBuffer.concat(ids);
       connectedSockets.forEach(el => {
         if (el.id == from) {
           el.socket.emit("message-rn", ids, sentBy);
@@ -60,7 +61,11 @@ function sockets(server, db) {
     if (chatBuffer.length > 0) {
       db.addMessages(chatBuffer);
     }
+    if (readBuffer.length > 0) {
+      db.readMessages(readBuffer);
+    }
     chatBuffer = [];
+    readBuffer = [];
   }, 1000);
 }
 
