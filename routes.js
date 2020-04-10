@@ -39,6 +39,10 @@ function routes(db) {
       }
     });
   });
+  router.post("/api/auth", authorize, (req, res) => {
+    var response = { token: jwt.sign({ user: res.locals.user }, JWT_KEY) };
+    res.json(response);
+  });
   router.post("/api/register", (req, res) => {
     var user = {
       fname: req.body.fname,
