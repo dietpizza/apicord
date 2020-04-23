@@ -27,9 +27,9 @@ function routes(db) {
 
   // The Routes
   router.post("/api/login", (req, res) => {
-    db.authenticate(req.body.username, sha256(req.body.passwd), data => {
+    db.authenticate(req.body.username, sha256(req.body.passwd), (data) => {
       var response = {
-        token: undefined
+        token: undefined,
       };
       if (data.status == 200) {
         response.token = jwt.sign({ user: data.user }, JWT_KEY);
@@ -39,10 +39,12 @@ function routes(db) {
       }
     });
   });
+
   router.post("/api/auth", authorize, (req, res) => {
     var response = { token: jwt.sign({ user: res.locals.user }, JWT_KEY) };
     res.json(response);
   });
+
   router.post("/api/register", (req, res) => {
     var user = {
       fname: req.body.fname,
@@ -50,9 +52,9 @@ function routes(db) {
       username: req.body.username,
       email: req.body.email,
       hash: sha256(req.body.passwd),
-      sex: req.body.sex
+      sex: req.body.sex,
     };
-    db.addUser(user, response => {
+    db.addUser(user, (response) => {
       if (response.status == 200) {
         res.status(200).json({ message: "User Registered!" });
       } else {
@@ -62,22 +64,24 @@ function routes(db) {
       }
     });
   });
+
   router.post("/api/users", authorize, (req, res) => {
-    db.getUsers(response => {
+    db.getUsers((response) => {
       user = res.locals.user;
-      response.users.forEach(user => {
+      response.users.forEach((user) => {
         delete user.hash;
       });
       response.users = response.users.filter(
-        item => item.username != user.username
+        (item) => item.username != user.username
       );
       res.json(response.users);
       return;
     });
   });
+
   router.post("/api/messages", authorize, (req, res) => {
     user = res.locals.user;
-    db.getMessages(user.id, req.body.target, data => {
+    db.getMessages(user.id, req.body.target, (data) => {
       res.status(data.status).json(data.messages);
     });
   });
@@ -86,6 +90,7 @@ function routes(db) {
   router.post("*", (req, res) => {
     res.status(404).json({ error: "Page not found!" });
   });
+
   router.get("*", (req, res) => {
     res.status(404).json({ error: "Page not found!" });
   });
