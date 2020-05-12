@@ -3,52 +3,54 @@ function sockets(server, db) {
   var chatBuffer = [];
   var readBuffer = [];
   const io = require("socket.io")(server);
-  io.on("connection", socket => {
+  io.on("connection", (socket) => {
     socket.on("disconnect", () => {
-      connectedSockets = connectedSockets.filter(user => user.socket != socket);
+      connectedSockets = connectedSockets.filter(
+        (user) => user.socket != socket
+      );
       var connectedIDs = [];
-      connectedSockets.forEach(el => {
+      connectedSockets.forEach((el) => {
         connectedIDs.push(el.id);
       });
-      connectedSockets.forEach(el => {
+      connectedSockets.forEach((el) => {
         el.socket.emit("online-list", connectedIDs);
       });
     });
-    socket.on("login", id => {
+    socket.on("login", (id) => {
       connectedSockets.push({ id: id, socket: socket });
       var connectedIDs = [];
-      connectedSockets.forEach(el => {
+      connectedSockets.forEach((el) => {
         connectedIDs.push(el.id);
       });
       connectedIDs = [...new Set(connectedIDs)];
-      connectedSockets.forEach(el => {
+      connectedSockets.forEach((el) => {
         el.socket.emit("online-list", connectedIDs);
       });
     });
-    socket.on("message-send", data => {
+    socket.on("message-send", (data) => {
       data.status = 1;
       chatBuffer.push(data);
-      var targetSockets = connectedSockets.filter(user => {
+      var targetSockets = connectedSockets.filter((user) => {
         return (
           user.id == data.to ||
           (user.id == data.from && user.socket.id != socket.id)
         );
       });
       socket.emit("message-d", data._id);
-      targetSockets.forEach(user => {
+      targetSockets.forEach((user) => {
         user.socket.emit("message-recv", data);
       });
     });
     socket.on("message-r", (ids, from, sentBy) => {
       readBuffer = readBuffer.concat(ids);
-      connectedSockets.forEach(el => {
+      connectedSockets.forEach((el) => {
         if (el.id == from) {
           el.socket.emit("message-rn", ids, sentBy);
         }
       });
     });
-    socket.on("typing", data => {
-      connectedSockets.forEach(user => {
+    socket.on("typing", (data) => {
+      connectedSockets.forEach((user) => {
         if (user.id == data.to) {
           user.socket.emit("typing", data);
         }
@@ -60,12 +62,12 @@ function sockets(server, db) {
   setInterval(() => {
     if (chatBuffer.length > 0) {
       db.addMessages(chatBuffer);
+      chatBuffer = [];
     }
     if (readBuffer.length > 0) {
       db.readMessages(readBuffer);
+      readBuffer = [];
     }
-    chatBuffer = [];
-    readBuffer = [];
   }, 1000);
 }
 
