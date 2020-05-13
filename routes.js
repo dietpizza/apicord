@@ -86,6 +86,12 @@ function routes(db) {
     });
   });
 
+  router.get('/api', (req, res) => {
+    res.status(200).json({
+      message: 'Server is running',
+    });
+  });
+
   // Catch all 404 requests
   router.post('*', (req, res) => {
     res.status(404).json({ error: 'Page not found!' });
