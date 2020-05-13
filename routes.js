@@ -5,8 +5,7 @@ function routes(db) {
   const jwt = require('jsonwebtoken');
 
   // Global Variables
-  const JWT_KEY =
-    process.env.JWT_KEY || 'THIS IS THE KEY FOR SIGNING JWT TOKENS';
+  const JWT_KEY = "MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAcwv4YODPmeBsD0h+Um1cVm7rmHNY182BQAN+V74t1+qNHyEVt+SH9CaSzNUFyqrkKZDLCisPF55dEqf6/MSjvQIDAQAB";
 
   // Custom Middleware
   function authorize(req, res, next) {
