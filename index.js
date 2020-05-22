@@ -6,18 +6,17 @@ const cors = require('cors');
 const socketio = require('./sockets');
 const MongoInterface = require('./db');
 const MongoDB = require('mongodb').MongoClient;
+const { MONGO_URI } = require('./config');
 
 // Global Variables
 const PORT = process.env.PORT || 3000;
-const MONGO_URI =
-  'mongodb+srv://rohan:kepsake550@cluster0-mvzld.azure.mongodb.net/';
 
 // MongoDB config
 var db = undefined;
 const client = new MongoDB(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  poolSize: 20,
+  poolSize: 10,
 });
 
 // Express instance

@@ -1,14 +1,9 @@
 function routes(db) {
-  // Dependencies
   const sha256 = require('sha256');
   const router = require('express').Router();
   const jwt = require('jsonwebtoken');
+  const { JWT_KEY } = require('./config');
 
-  // Global Variables
-  const JWT_KEY =
-    'MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAcwv4YODPmeBsD0h+Um1cVm7rmHNY182BQAN+V74t1+qNHyEVt+SH9CaSzNUFyqrkKZDLCisPF55dEqf6/MSjvQIDAQAB';
-
-  // Custom Middleware
   function authorize(req, res, next) {
     if (req.body.token != undefined) {
       jwt.verify(req.body.token, JWT_KEY, (err, decoded) => {
@@ -25,7 +20,6 @@ function routes(db) {
     }
   }
 
-  // The Routes
   router.post('/api/login', (req, res) => {
     db.authenticate(req.body.username, sha256(req.body.passwd), (data) => {
       var response = {
@@ -92,7 +86,6 @@ function routes(db) {
     });
   });
 
-  // Catch all 404 requests
   router.post('*', (req, res) => {
     res.status(404).json({ error: 'Page not found!' });
   });

@@ -1,21 +1,21 @@
-const uuid = require("uuid/v1");
+const uuid = require('uuid/v1');
 var client, users, messages;
 
 class MongoInterface {
   constructor(instance) {
     client = instance;
-    users = client.db("cord").collection("users");
-    messages = client.db("cord").collection("messages");
+    users = client.db('cord').collection('users');
+    messages = client.db('cord').collection('messages');
   }
   authenticate(username, hash, callback) {
     var response = {
       status: 401,
-      user: undefined
+      user: undefined,
     };
     users
       .find({ username })
       .toArray()
-      .then(data => {
+      .then((data) => {
         if (data.length == 1 && data[0].hash == hash) {
           response.status = 200;
           delete data[0].hash;
@@ -29,21 +29,21 @@ class MongoInterface {
   }
   addUser(user, callback) {
     var response = {
-      status: 200
+      status: 200,
     };
     users
       .find({
         $or: [
           {
-            username: user.username
+            username: user.username,
           },
           {
-            email: user.email
-          }
-        ]
+            email: user.email,
+          },
+        ],
       })
       .toArray()
-      .then(data => {
+      .then((data) => {
         if (data.length > 0) {
           response.status = 409;
           callback(response);
@@ -57,13 +57,13 @@ class MongoInterface {
   getUsers(callback) {
     var response = {
       status: 200,
-      users: undefined
+      users: undefined,
     };
     users
       .find({})
       .sort({ fname: 1 })
       .toArray()
-      .then(data => {
+      .then((data) => {
         response.users = data;
         callback(response);
       });
@@ -71,36 +71,36 @@ class MongoInterface {
   getMessages(from, to, callback) {
     var response = {
       status: 200,
-      messages: undefined
+      messages: undefined,
     };
     messages
       .find({
         $or: [
           {
             from: from,
-            to: to
+            to: to,
           },
           {
             from: to,
-            to: from
-          }
-        ]
+            to: from,
+          },
+        ],
       })
       .toArray()
-      .then(data => {
+      .then((data) => {
         response.messages = data;
         callback(response);
       });
   }
   readMessages(ids) {
     if (ids != null || ids != undefined)
-      ids.forEach(el => {
+      ids.forEach((el) => {
         messages.updateOne(
           { _id: el },
           {
             $set: {
-              status: 2
-            }
+              status: 2,
+            },
           }
         );
       });
