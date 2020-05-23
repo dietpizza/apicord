@@ -30,6 +30,7 @@ client.connect((err) => {
     console.log('Error connecting to MongoDB.');
     process.exit(0);
   } else {
+    console.log('Connected to MongoDB');
     var db = new MongoInterface(client);
     const server = app.listen(PORT, () => {
       console.log('Server running at port: ' + PORT);
