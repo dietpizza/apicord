@@ -2,11 +2,11 @@ function routes(db) {
   const sha256 = require('sha256');
   const router = require('express').Router();
   const jwt = require('jsonwebtoken');
-  const { JWT_KEY } = require('./config');
+  const config = require('./config');
 
   function authorize(req, res, next) {
     if (req.body.token != undefined) {
-      jwt.verify(req.body.token, JWT_KEY, (err, decoded) => {
+      jwt.verify(req.body.token, config.JWT_KEY, (err, decoded) => {
         if (err) {
           res.status(401).json({ error: 'Not authorized!' });
           return;
@@ -26,7 +26,7 @@ function routes(db) {
         token: undefined,
       };
       if (data.status == 200) {
-        response.token = jwt.sign({ user: data.user }, JWT_KEY);
+        response.token = jwt.sign({ user: data.user }, config.JWT_KEY);
         res.status(200).json(response);
       } else {
         res.status(401).json({ error: 'Username or password incorrect' });
@@ -35,7 +35,9 @@ function routes(db) {
   });
 
   router.post('/api/auth', authorize, (req, res) => {
-    var response = { token: jwt.sign({ user: res.locals.user }, JWT_KEY) };
+    var response = {
+      token: jwt.sign({ user: res.locals.user }, config.JWT_KEY),
+    };
     res.json(response);
   });
 

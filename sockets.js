@@ -1,8 +1,10 @@
 function sockets(server, db) {
+  const io = require('socket.io')(server);
+
   var connectedSockets = [];
   var chatBuffer = [];
   var readBuffer = [];
-  const io = require('socket.io')(server);
+
   io.on('connection', (socket) => {
     socket.on('disconnect', () => {
       connectedSockets = connectedSockets.filter(
